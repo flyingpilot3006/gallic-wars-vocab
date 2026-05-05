@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legio-v1';
+const CACHE_NAME = 'legio-v2';
 
 // We use relative paths so it works correctly on GitHub Pages subpaths
 const urlsToCache = [
@@ -9,22 +9,53 @@ const urlsToCache = [
   './logo512.png'
 ];
 
-// Install the Service Worker and cache essential files
+// Install the Service Worker and cache essential files safely
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('Legio Cache: Initializing armor and shields...');
-      return cache.addAll(urlsToCache);
+      // Safely cache each item so a single missing file doesn't break the entire PWA install
+      for (const url of urlsToCache) {
+        try {
+          await cache.add(url);
+        } catch (error) {
+          console.warn(`Legio Cache: Failed to cache ${url}`, error);
+        }
+      }
     })
   );
+  self.skipWaiting(); // Force the waiting service worker to become the active service worker
 });
 
-// Intercept network requests and serve from cache if available
+// Intercept network requests and dynamically cache new assets
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return response || fetch(event.request);
+      // Return cached version if found
+      if (response) {
+        return response;
+      }
+      
+      // Otherwise fetch from network and dynamically cache it
+      return fetch(event.request).then((networkResponse) => {
+        // Ensure the response is valid before caching
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse;
+        }
+
+        // Only cache http/https requests (prevents chrome-extension:// errors)
+        if (event.request.url.startsWith('http')) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+
+        return networkResponse;
+      }).catch(() => {
+        // Fallback for when network is completely offline and asset isn't cached
+        console.log('Legio Cache: Network request failed and not in cache.');
+      });
     })
   );
 });
@@ -44,4 +75,5 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  event.waitUntil(self.clients.claim()); // Take control of all pages immediately
 });
