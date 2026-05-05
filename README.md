@@ -1,2 +1,1 @@
-# flyingpilot.github.io
-random test
+# https://flyingpilot3006.github.io/gallic-wars-vocab/
