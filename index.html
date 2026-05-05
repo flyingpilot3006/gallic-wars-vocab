@@ -4,21 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>De Bello Gallico</title>
-    <!-- Use relative paths or Vite will handle these with the base config -->
-    <link rel="manifest" href="manifest.json" />
+    
+    <!-- Hardcoding the repo path ensures the PWA manifest is found on GitHub Pages -->
+    <link rel="manifest" href="/gallic-wars-vocab/manifest.json" />
     <meta name="theme-color" content="#722F37" />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="src/main.jsx"></script>
+    
+    <!-- Vite strictly requires a leading slash for the entry point in development and build -->
+    <script type="module" src="/src/main.jsx"></script>
+    
     <script>
-      // Adjusted Service Worker registration for subpath
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // We use a relative path here so it works on GitHub Pages subfolder
-          navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('Legion SW Registered for scope:', reg.scope))
-            .catch(err => console.log('Recruitment failed', err));
+          // Hardcoding the service worker path ensures registration succeeds on subpaths
+          navigator.serviceWorker.register('/gallic-wars-vocab/sw.js')
+            .then(reg => console.log('Legion SW Registered:', reg.scope))
+            .catch(err => console.log('Recruitment failed:', err));
         });
       }
     </script>
